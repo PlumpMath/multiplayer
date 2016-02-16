@@ -5,7 +5,7 @@
             [ring.util.http-response :refer [ok]]
             [clojure.java.io :as io]
 
-            ;[chord.format.fressian :as fression]
+            [chord.format.fressian :as fressian]
             [clj-time.core :as time]
             [clj-time.coerce :as coerce]
             [clojure.tools.logging :as log]
@@ -22,29 +22,10 @@
 
 (defn ws-handler [{:keys [ws-channel] :as req}]
   (go
-    (let [{greet :message} (<! ws-channel)
-          [command & remain] greet
-          ]
-      (case command
-        :login
-        (do
-          (>! ws-channel [:hi (first remain)
-                          (swap! next-uid inc)])
-          (loop []
-            (let [start (coerce/to-long (time/now))]
-              (loop [n 30]
-                (<! ws-channel)
-                (>! ws-channel [:ok])
-                (when (pos? n)
-                  (recur (dec n))))
 
-              (let [end (coerce/to-long (time/now))]
-                (println "30 messages took " (- end start) " milliseconds")
-                (println (float (/ 30000 (- end start))) " mps")
-                ))
-            (recur))
-            ))
-
+    (let [{msg :message} (<! ws-channel)]
+      (println "message was" (str msg))
+      (>! ws-channel [:roger :that])
       )
 
     ))
@@ -55,6 +36,6 @@
   (GET "/docs" [] (ok (-> "docs/docs.md" io/resource slurp)))
   (GET "/str" [request] str)
   (GET "/ws" []
-       (wrap-websocket-handler ws-handler {:format :transit-json}))
+       (wrap-websocket-handler ws-handler {:format :fressian}))
 
 )

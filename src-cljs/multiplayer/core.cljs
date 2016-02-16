@@ -103,30 +103,12 @@
 
 (defonce foo
   (go
-    (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :transit-json}))]
+    (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :fressian}))]
       (if-not error
         (do
-          (>! ws-channel [:login "bruce-fu!"])
-          (let [{[id] :message} (<! ws-channel)]
+          (>! ws-channel [:login :test])
+          (let [{response :message} (<! ws-channel)]
 
-            (js/console.log "id:" id)
-            (loop [c 0
-                   to (timeout (/ 1000 30))]
-
-              (>! ws-channel [(swap! game-state inc) (Math/random)])
-              (if (nil? (let [data (<! ws-channel)]
-                          (if (nil? data)
-                            ;; conn closed
-                            nil
-
-                            (let [t (coerce/to-long (local/local-now))]
-                              (when (zero? (mod c 30))
-                                (js/console.log "recv:" (str t) (str data) ))
-
-                              ;; finish the 1/30 timeblock
-                              (<! to)
-                              (recur (inc c)
-                                     (timeout (/ 1000 30))))
-                            )))))
+            (js/console.log "response:" (str response))
             ))
         (js/console.log "Error:" (pr-str error))))))
