@@ -1,5 +1,5 @@
 (ns multiplayer.core
-  (:require [reagent.core :as r]
+  (:require
             [reagent.session :as session]
             [secretary.core :as secretary :include-macros true]
             [goog.events :as events]
@@ -11,97 +11,29 @@
             [chord.format.fressian :as fression]
             [cljs-time.local :as local]
             [cljs-time.coerce :as coerce]
+
+            [infinitelives.pixi.canvas :as c]
+            [infinitelives.pixi.events :as e]
+            [infinitelives.pixi.resources :as r]
+            [infinitelives.pixi.texture :as t]
+            [infinitelives.pixi.sprite :as s]
+            [cljs.core.async :refer [<!]]
             )
-  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [infinitelives.pixi.macros :as m])
   (:import goog.History))
 
-(defn nav-link [uri title page collapsed?]
-  [:ul.nav.navbar-nav>a.navbar-brand
-   {:class (when (= page (session/get :page)) "active")
-    :href uri
-    :on-click #(reset! collapsed? true)}
-   title])
-
-(defn navbar []
-  (let [collapsed? (r/atom true)]
-    (fn []
-      [:nav.navbar.navbar-light.bg-faded
-       [:button.navbar-toggler.hidden-sm-up
-        {:on-click #(swap! collapsed? not)} "☰"]
-       [:div.collapse.navbar-toggleable-xs
-        (when-not @collapsed? {:class "in"})
-        [:a.navbar-brand {:href "#/"} "multiplayer"]
-        [:ul.nav.navbar-nav
-         [nav-link "#/" "Home" :home collapsed?]
-         [nav-link "#/about" "About" :about collapsed?]]]])))
-
-(defn about-page []
-  [:div.container
-   [:div.row
-    [:div.col-md-12
-     "this is the story of multiplayer... work in progress"]]])
-
-(defn home-page []
-  [:div.container
-   [:div.jumbotron
-    [:h1 "Welcome to multiplayer"]
-    [:p "Time to start building your site!"]
-    [:p [:a.btn.btn-primary.btn-lg {:href "http://luminusweb.net"} "Learn more »"]]]
-   [:div.row
-    [:div.col-md-12
-     [:h2 "Welcome to ClojureScript"]]]
-   (when-let [docs (session/get :docs)]
-     [:div.row
-      [:div.col-md-12
-       [:div {:dangerouslySetInnerHTML
-              {:__html (md->html docs)}}]]])])
-
-(def pages
-  {:home #'home-page
-   :about #'about-page})
-
-(defn page []
-  [(pages (session/get :page))])
-
-;; -------------------------
-;; Routes
-(secretary/set-config! :prefix "#")
-
-(secretary/defroute "/" []
-  (session/put! :page :home))
-
-(secretary/defroute "/about" []
-  (session/put! :page :about))
-
-;; -------------------------
-;; History
-;; must be called after routes have been defined
-(defn hook-browser-navigation! []
-  (doto (History.)
-        (events/listen
-          HistoryEventType/NAVIGATE
-          (fn [event]
-              (secretary/dispatch! (.-token event))))
-        (.setEnabled true)))
-
-;; -------------------------
-;; Initialize app
-(defn fetch-docs! []
-  (GET (str js/context "/docs") {:handler #(session/put! :docs %)}))
-
-(defn mount-components []
-  (r/render [#'navbar] (.getElementById js/document "navbar"))
-  (r/render [#'page] (.getElementById js/document "app")))
-
-(defn init! []
-  (fetch-docs!)
-  (hook-browser-navigation!)
-  (mount-components))
-
+(defonce canvas
+  (c/init
+   {:expand true
+    :engine :auto
+    :layers [:bg :world :float :ui]
+    :background 0x303030
+    }))
 
 (defonce game-state (atom 0))
 
-(defonce foo
+(defn foo []
   (go
     (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :fressian}))]
       (if-not error
@@ -112,3 +44,31 @@
             (js/console.log "response:" (str response))
             ))
         (js/console.log "Error:" (pr-str error))))))
+
+(def assets
+  {:ship-blue
+   {:pos [0 0]
+    :size [32 32]}
+   :ship-green
+   {:pos [32 0]
+    :size [32 32]}
+   :ship-violet
+   {:pos [64 0]
+    :size [32 32]}
+   :ship-yellow
+   {:pos [96 0]
+    :size [32 32]}
+   })
+
+(defonce main-thread
+  (go
+    (<! (r/load-resources canvas :bg ["img/spritesheet.png"]))
+
+    (t/load-sprite-sheet! (r/get-texture :spritesheet :nearest) assets)
+
+    (m/with-sprite canvas :bg
+      [ship (s/make-sprite :ship-yellow :scale 2)]
+      (loop [angle 0]
+        (s/set-rotation! ship angle)
+        (<! (e/next-frame))
+        (recur (+ 0.05 angle))))))

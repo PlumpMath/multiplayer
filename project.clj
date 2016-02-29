@@ -40,6 +40,9 @@
                  [jarohen/chord "0.7.0"]
                  [com.andrewmcveigh/cljs-time "0.4.0"]
 
+                 ;; add pixi
+                 [infinitelives.pixi/infinitelives.pixi "0.1.0-SNAPSHOT"]
+
                  ]
 
   :min-lein-version "2.0.0"
