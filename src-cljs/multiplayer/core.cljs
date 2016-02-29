@@ -2,7 +2,7 @@
   (:require
             [reagent.session :as session]
             [secretary.core :as secretary :include-macros true]
-            [goog.events :as events]
+
             [goog.history.EventType :as HistoryEventType]
             [markdown.core :refer [md->html]]
             [ajax.core :refer [GET POST]]
@@ -17,6 +17,9 @@
             [infinitelives.pixi.resources :as r]
             [infinitelives.pixi.texture :as t]
             [infinitelives.pixi.sprite :as s]
+
+            [infinitelives.utils.events :as events]
+
             [cljs.core.async :refer [<!]]
             )
   (:require-macros [cljs.core.async.macros :refer [go]]
@@ -60,6 +63,12 @@
     :size [32 32]}
    })
 
+(defn left? []
+  (events/is-pressed? :left))
+
+(defn right? []
+  (events/is-pressed? :right))
+
 (defonce main-thread
   (go
     (<! (r/load-resources canvas :bg ["img/spritesheet.png"]))
@@ -67,8 +76,13 @@
     (t/load-sprite-sheet! (r/get-texture :spritesheet :nearest) assets)
 
     (m/with-sprite canvas :bg
-      [ship (s/make-sprite :ship-yellow :scale 2)]
+      [ship (s/make-sprite :ship-yellow :scale 3)]
       (loop [angle 0]
         (s/set-rotation! ship angle)
         (<! (e/next-frame))
-        (recur (+ 0.05 angle))))))
+        (recur (+
+                (cond
+                  (left?) -0.05
+                  (right?) 0.05
+                  :default 0.00)
+                angle))))))

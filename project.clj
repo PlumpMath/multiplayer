@@ -42,6 +42,7 @@
 
                  ;; add pixi
                  [infinitelives.pixi/infinitelives.pixi "0.1.0-SNAPSHOT"]
+                 [infinitelives.utils/infinitelives.utils "0.1.0-SNAPSHOT"]
 
                  ]
 
