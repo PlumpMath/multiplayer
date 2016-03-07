@@ -70,6 +70,31 @@
       ))
   )
 
+(defn reporter-game-state []
+  (go
+    (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :transit-json}))]
+      (if-not error
+        (do
+          (receiver ws-channel
+                    )
+          (>! ws-channel [:login :test])
+
+          (loop [fnum 0]
+            (when (zero? (mod fnum network-update-frames))
+              (>! ws-channel [:state (compress @game-state)]))
+            (<! (e/next-frame))
+            (recur (inc fnum))
+            )
+
+          ;; (let [{response :message} (<! ws-channel)]
+
+          ;;   (js/console.log "response:" (str response))
+          ;;   )
+          )
+        (js/console.log "Error:" (pr-str error))))
+)
+)
+
 (def assets
   {:ship-blue
    {:pos [0 0]
