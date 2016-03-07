@@ -120,12 +120,21 @@
   (go
     (<! (r/load-resources canvas :bg ["img/spritesheet.png"]))
 
+    (reporter-game-state)
+
     (t/load-sprite-sheet! (r/get-texture :spritesheet :nearest) assets)
 
     (m/with-sprite canvas :bg
-      [ship (s/make-sprite :ship-yellow :scale 3)]
+      [ship (s/make-sprite :ship-yellow :scale 3 :x -200)
+       reflection (s/make-sprite :ship-blue :scale 3 :x 200)]
       (loop [angle 0]
         (s/set-rotation! ship angle)
+
+        (swap! game-state assoc :angle angle)
+
+        ;; set the reflection based on the atom
+        (s/set-rotation! reflection (:reflection-angle @game-state))
+
         (<! (e/next-frame))
         (recur (+
                 (cond
