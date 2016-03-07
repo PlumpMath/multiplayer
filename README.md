@@ -22,6 +22,8 @@ Then connect the browser to:
 
 	http://localhost:3449/
 
+The client will load and then connect to the server over a websocket.
+
 Pressing left and right arrows will rotate the yellow ship on the left. The blue ship on the right represents the reflected state from the server, or how other game players would see your ship.
 
 ## License
