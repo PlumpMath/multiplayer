@@ -51,6 +51,11 @@
             ))
         (js/console.log "Error:" (pr-str error))))))
 
+(defn compress [state]
+  (-> state
+      (update-in [:angle] #(.toFixed % 2))
+      (dissoc :reflection-angle))
+)
 (def assets
   {:ship-blue
    {:pos [0 0]
