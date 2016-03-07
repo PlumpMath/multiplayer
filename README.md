@@ -14,6 +14,16 @@ To start a web server for the application, run:
 
     lein run
 
+Then, in another terminal, start figwheel to compile the client:
+
+	lein figwheel
+
+Then connect the browser to:
+
+	http://localhost:3449/
+
+Pressing left and right arrows will rotate the yellow ship on the left. The blue ship on the right represents the reflected state from the server, or how other game players would see your ship.
+
 ## License
 
 Copyright © 2016 FIXME
