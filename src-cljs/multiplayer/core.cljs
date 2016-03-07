@@ -34,7 +34,10 @@
     :background 0x303030
     }))
 
-(defonce game-state (atom 0))
+(defonce game-state (atom {:angle 0}))
+
+;; how fast the network game pump goes
+(def network-update-frames 10)
 
 (defn foo []
   (go
