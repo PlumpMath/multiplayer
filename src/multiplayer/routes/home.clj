@@ -22,13 +22,15 @@
 
 (defn ws-handler [{:keys [ws-channel] :as req}]
   (go
-
-    (let [{msg :message} (<! ws-channel)]
-      (println "message was" (str msg))
-      (>! ws-channel [:roger :that])
-      )
-
-    ))
+    (loop []
+        (let [{msg :message} (<! ws-channel)]
+          (println "message was" (str msg))
+          (let [[_ {:keys [angle]}] msg]
+            (>! ws-channel [:state {:reflection-angle angle}]))
+          (when msg
+            (recur))
+          )))
+  )
 
 
 (defroutes home-routes
@@ -36,6 +38,6 @@
   (GET "/docs" [] (ok (-> "docs/docs.md" io/resource slurp)))
   (GET "/str" [request] str)
   (GET "/ws" []
-       (wrap-websocket-handler ws-handler {:format :fressian}))
+       (wrap-websocket-handler ws-handler {:format :transit-json}))
 
 )
