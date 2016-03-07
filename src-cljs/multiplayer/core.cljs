@@ -56,6 +56,20 @@
       (update-in [:angle] #(.toFixed % 2))
       (dissoc :reflection-angle))
 )
+
+(defn receiver [ch]
+  (go
+    (loop []
+      (swap! game-state assoc :reflection-angle
+             (let [{[comm {:keys [reflection-angle]}] :message :as msg} (<! ch)
+                   f-ang (js/parseFloat reflection-angle)]
+               (js/console.log "msg:" (str msg))
+               f-ang))
+                                        ;(<! (e/next-frame))
+      (recur)
+      ))
+  )
+
 (def assets
   {:ship-blue
    {:pos [0 0]
