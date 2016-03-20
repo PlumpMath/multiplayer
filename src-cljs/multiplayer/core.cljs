@@ -54,29 +54,31 @@
 (defn compress [state]
   (-> state
       (update-in [:angle] #(.toFixed % 2))
-      (dissoc :reflection-angle))
+      (dissoc :reflection))
 )
+
+(defn receive-message
+  "receive the nework `message` use it to update the `state` and
+  return the next state"
+  [state message rec-num]
+  (let [{[comm {:keys [reflection-angle]}] :message} message
+        f-ang (js/parseFloat reflection-angle)]
+    (-> state
+        (assoc-in [:reflection rec-num :angle] f-ang))))
 
 (defn receiver [ch]
   (go
-    (loop []
-      (swap! game-state assoc :reflection-angle
-             (let [{[comm {:keys [reflection-angle]}] :message :as msg} (<! ch)
-                   f-ang (js/parseFloat reflection-angle)]
-               (js/console.log "msg:" (str msg))
-               f-ang))
-                                        ;(<! (e/next-frame))
-      (recur)
-      ))
-  )
+    (loop [rec-num 0]
+      (swap! game-state receive-message (<! ch) rec-num)
+      (recur (inc rec-num)))))
 
 (defn reporter-game-state []
   (go
     (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :transit-json}))]
       (if-not error
         (do
-          (receiver ws-channel
-                    )
+          ;; start reciever go loop
+          (receiver ws-channel)
           (>! ws-channel [:login :test])
 
           (loop [fnum 0]
@@ -127,18 +129,30 @@
     (m/with-sprite canvas :bg
       [ship (s/make-sprite :ship-yellow :scale 3 :x -200)
        reflection (s/make-sprite :ship-blue :scale 3 :x 200)]
-      (loop [angle 0]
+      (loop [fnum 0
+             angle 0]
         (s/set-rotation! ship angle)
 
         (swap! game-state assoc :angle angle)
 
-        ;; set the reflection based on the atom
-        (s/set-rotation! reflection (:reflection-angle @game-state))
+
+        (js/console.log "state=" (str @game-state))
+
+        (when (zero? (mod fnum network-update-frames))
+          ;; set the reflection based on the atom
+          (s/set-rotation! reflection
+                           (-> game-state deref
+                               :reflection
+                               sort
+                               last
+                               second
+                               :angle)))
 
         (<! (e/next-frame))
-        (recur (+
-                (cond
-                  (left?) -0.05
-                  (right?) 0.05
-                  :default 0.00)
-                angle))))))
+        (recur (inc fnum)
+         (+
+          (cond
+            (left?) -0.05
+            (right?) 0.05
+            :default 0.00)
+          angle))))))
