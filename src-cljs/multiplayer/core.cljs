@@ -40,18 +40,6 @@
 ;; a state update is sent once in this number of frames
 (def network-update-frames 10)
 
-(defn foo []
-  (go
-    (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:3000/ws" {:format :fressian}))]
-      (if-not error
-        (do
-          (>! ws-channel [:login :test])
-          (let [{response :message} (<! ws-channel)]
-
-            (js/console.log "response:" (str response))
-            ))
-        (js/console.log "Error:" (pr-str error))))))
-
 (defn compress [state]
   (-> state
       (update-in [:angle] #(.toFixed % 2))
