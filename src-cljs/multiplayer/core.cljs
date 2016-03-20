@@ -134,29 +134,29 @@
       [ship (s/make-sprite :ship-yellow :scale 3 :x -200)
        reflection (s/make-sprite :ship-blue :scale 3 :x 200)]
       (loop [fnum 0
-             angle 0]
+             angle 0
+             old-angle (get-in @game-state [:reflection :old :angle])
+             new-angle (get-in @game-state [:reflection :new :angle])]
         (s/set-rotation! ship angle)
 
         (swap! game-state assoc :angle angle)
+        ;(js/console.log "state=" (str @game-state))
 
-
-        (js/console.log "state=" (str @game-state))
-
-        (when (zero? (mod fnum network-update-frames))
-          ;; set the reflection based on the atom
-          (s/set-rotation! reflection
-                           (-> game-state deref
-                               :reflection
-                               sort
-                               last
-                               second
-                               :angle)))
+        ;; lerp the reflection
+        (when (and old-angle new-angle)
+          (let [off (mod (dec fnum) network-update-frames)
+                m (/ (- new-angle old-angle) network-update-frames)]
+            (s/set-rotation! reflection
+                             (+ old-angle (* m off)))))
 
         (<! (e/next-frame))
-        (recur (inc fnum)
-         (+
-          (cond
-            (left?) -0.05
-            (right?) 0.05
-            :default 0.00)
-          angle))))))
+        (let [update? (zero? (mod fnum network-update-frames))]
+          (recur (inc fnum)
+                 (+
+                  (cond
+                    (left?) -0.05
+                    (right?) 0.05
+                    :default 0.00)
+                  angle)
+                 (if update? (get-in @game-state [:reflection :old :angle]) old-angle)
+                 (if update? (get-in @game-state [:reflection :new :angle]) new-angle)))))))
