@@ -36,7 +36,8 @@
 
 (defonce game-state (atom {:angle 0}))
 
-;; how fast the network game pump goes
+;; how fast the network game pump goes in frames
+;; a state update is sent once in this number of frames
 (def network-update-frames 10)
 
 (defn foo []
