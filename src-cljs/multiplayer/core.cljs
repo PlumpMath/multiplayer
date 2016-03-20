@@ -63,9 +63,12 @@
   return the next state"
   [state message rec-num]
   (let [{[comm {:keys [reflection-angle]}] :message} message
-        f-ang (js/parseFloat reflection-angle)]
+        f-ang (when reflection-angle (js/parseFloat reflection-angle))]
+    ;(js/console.log "fang=" (str f-ang) (str message))
     (-> state
-        (assoc-in [:reflection rec-num :angle] f-ang))))
+        (assoc-in [:reflection :old :angle]
+                  (get-in state [:reflection :new :angle] nil))
+        (assoc-in [:reflection :new :angle] f-ang))))
 
 (defn receiver [ch]
   (go
